@@ -15,18 +15,14 @@ pnpm install @adminforth/json-editor --save
 Import and attach the plugin to an existing column in your resource:
 
 ```ts title="./your_resourse"
-//diff-add
 import JsonEditorPlugin from '@adminforth/json-editor';
 
 export default {
   ...
   plugins: [
     ...
-//diff-add
     new JsonEditorPlugin({
-//diff-add
       fieldName: 'description',
-//diff-add
     }),
   ],
 }
