@@ -75,19 +75,14 @@ function toDisplay(v: any): string {
   return JSON.stringify(v);
 }
 
-function isValidJson(raw: string): boolean {
-  if (!raw.trim()) return true;
-  try {
-    JSON.parse(raw.trim());
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function fromDisplay(raw: string): any {
-  if (!raw.trim()) return '';
-  return JSON.parse(raw.trim());
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return trimmed;
+  }
 }
 
 function toPairs(json: any): Pair[] {
@@ -115,10 +110,6 @@ function getError(): string | null {
   const keys = pairs.value.map(p => p.key.trim()).filter(Boolean);
   if (new Set(keys).size < keys.length) {
     return 'Duplicate keys are not allowed';
-  }
-  const badIndex = pairs.value.findIndex((p: Pair) => p.key.trim() && !isValidJson(p.value));
-  if (badIndex !== -1) {
-    return `Row ${badIndex + 1}: value is not valid JSON`;
   }
   return null;
 }
