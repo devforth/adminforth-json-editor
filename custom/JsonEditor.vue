@@ -107,6 +107,19 @@ function toObject(): Record<string, any> {
 }
 
 function getError(): string | null {
+  for (const pair of pairs.value) {
+    const hasKey = !!pair.key.trim();
+    const hasValue = !!pair.value.trim();
+    if (!hasKey && !hasValue) {
+      return 'Empty rows are not allowed';
+    }
+    if (!hasKey) {
+      return 'Value without a key is not allowed';
+    }
+    if (!hasValue) {
+      return 'Key without a value is not allowed';
+    }
+  }
   const keys = pairs.value.map(p => p.key.trim()).filter(Boolean);
   if (new Set(keys).size < keys.length) {
     return 'Duplicate keys are not allowed';
