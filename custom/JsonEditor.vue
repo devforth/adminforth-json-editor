@@ -81,7 +81,6 @@ function fromDisplay(raw: string): any {
   try {
     return JSON.parse(trimmed);
   } catch {
-    // not valid JSON — treat the raw text as a plain string
     return trimmed;
   }
 }
