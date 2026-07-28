@@ -92,6 +92,8 @@ interface Pair {
 
 function toDisplay(v: any): string {
   if (v === undefined) return '';
+  // strings are shown raw, everything else in its JSON form
+  if (typeof v === 'string') return v;
   return JSON.stringify(v);
 }
 
