@@ -9,7 +9,7 @@
     <div
       v-for="(pair, index) in pairs"
       :key="index"
-      class="flex items-center gap-2"
+      class="flex items-start gap-2"
     >
       <Input
         type="text"
@@ -19,11 +19,12 @@
         :readonly="readonly"
         @update:modelValue="onChanged"
       />
-      <Input
-        type="text"
+      <Textarea
         v-model="pair.value"
+        v-autogrow
         placeholder="value"
-        fullWidth
+        rows="1"
+        class="flex-1 min-w-64"
         :readonly="readonly"
         @update:modelValue="onChanged"
       />
@@ -31,7 +32,7 @@
         v-if="!readonly"
         type="button"
         @click="removePair(index)"
-        class="p-1.5 rounded-default text-lightPrimary dark:text-darkDanger hover:bg-lightDanger/10 dark:hover:bg-darkDanger/10 transition-colors flex-shrink-0"
+        class="flex items-center justify-center w-10 h-10 p-1.5 rounded-default text-lightPrimary dark:text-darkDanger hover:bg-lightDanger/10 dark:hover:bg-darkDanger/10 transition-colors flex-shrink-0"
         title="Remove row"
       >
         <IconTrashBinSolid class="w-5 h-5" />
@@ -51,9 +52,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { Input, Button } from '@/afcl';
+import { ref, watch, nextTick } from 'vue';
+import { Input, Textarea, Button } from '@/afcl';
 import { IconTrashBinSolid } from '@iconify-prerendered/vue-flowbite';
+
+function autogrow(el: HTMLTextAreaElement) {
+  el.style.height = 'auto';
+  // scrollHeight ignores borders, which border-box sizing includes
+  const borders = el.offsetHeight - el.clientHeight;
+  el.style.height = `${el.scrollHeight + borders}px`;
+}
+
+const vAutogrow = {
+  mounted(el: HTMLTextAreaElement) {
+    el.style.overflowY = 'hidden';
+    el.style.resize = 'none';
+    el.addEventListener('input', () => autogrow(el));
+    nextTick(() => autogrow(el));
+  },
+  updated(el: HTMLTextAreaElement) {
+    nextTick(() => autogrow(el));
+  },
+};
 
 const props = defineProps<{
   column: any;
