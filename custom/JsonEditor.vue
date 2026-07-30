@@ -32,29 +32,31 @@
         v-if="!readonly"
         type="button"
         @click="removePair(index)"
-        class="flex items-center justify-center w-10 h-10 p-1.5 rounded-default text-lightPrimary dark:text-darkDanger hover:bg-lightDanger/10 dark:hover:bg-darkDanger/10 transition-colors flex-shrink-0"
+        class="flex items-center justify-center w-10 h-10 p-1.5 rounded-default dark:text-darkDanger hover:bg-lightDanger/10 dark:hover:bg-darkDanger/10 transition-colors flex-shrink-0"
         title="Remove row"
+        variant="secondary"
       >
-        <IconTrashBinSolid class="w-5 h-5" />
+        <IconTrashBinSolid class="w-6 h-6 text-lightInputIcons dark:text-darkInputIcons" />
       </button>
     </div>
 
-    <Button
+    <button
       v-if="!readonly"
       type="button"
       variant="primary"
       @click="addPair"
-      class="self-start mt-1"
+      class="flex items-center mt-2 w-20 py-1 px-3 me-2 text-sm font-medium rounded-default text-lightInputText focus:outline-none bg-lightInputBackground rounded border border-lightInputBorder hover:bg-lightInputBackgroundHover hover:text-lightInputTextHover hover:border-lightInputBorderHover focus:z-10 focus:ring-4 focus:ring-lightInputFocusRing dark:focus:ring-darkInputFocusRing dark:bg-darkInputBackground dark:text-darkInputText dark:border-darkInputBorder dark:hover:darkInputTextHover dark:hover:bg-darkInputHover"
     >
-      Add row
-    </Button>
+      <IconPlusOutline class="w-4 h-4 me-2"/>
+      {{ $t('Add') }}
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue';
 import { Input, Textarea, Button } from '@/afcl';
-import { IconTrashBinSolid } from '@iconify-prerendered/vue-flowbite';
+import { IconTrashBinSolid, IconPlusOutline } from '@iconify-prerendered/vue-flowbite';
 
 function autogrow(el: HTMLTextAreaElement) {
   el.style.height = 'auto';
