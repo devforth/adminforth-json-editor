@@ -23,12 +23,15 @@ export default {
     ...
     new JsonEditorPlugin({
       fieldName: 'description',
+      fixedKeys: ['title', 'summary'], // optional: locks and orders the available keys
     }),
   ],
 }
 ```
 
 > The plugin works on columns with type `json`, `string`, or `text`. The stored value must be a JSON object (`{}`). Top-level arrays and primitives are not supported.
+
+When `fixedKeys` is provided, key inputs are read-only and rows cannot be added or removed. The editor always displays every configured key in the specified order, including keys missing from an existing value. Create and edit requests are also validated on the backend, so the stored object must contain exactly the configured key set.
 
 ## Value types
 

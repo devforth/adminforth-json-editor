@@ -3,7 +3,7 @@
     <div v-if="pairs.length" class="flex items-center gap-2">
       <span class="flex-1 text-xs font-medium text-lightInputText dark:text-darkInputText">Key</span>
       <span class="flex-1 text-xs font-medium text-lightInputText dark:text-darkInputText">Value</span>
-      <span v-if="!readonly" class="w-7" />
+      <span v-if="!readonly && !fixedMode" class="w-7" />
     </div>
 
     <div
@@ -16,7 +16,7 @@
         v-model="pair.key"
         placeholder="key"
         fullWidth
-        :readonly="readonly"
+        :readonly="readonly || fixedMode"
         @update:modelValue="onChanged"
       />
       <Textarea
@@ -29,7 +29,7 @@
         @update:modelValue="onChanged"
       />
       <button
-        v-if="!readonly"
+        v-if="!readonly && !fixedMode"
         type="button"
         @click="removePair(index)"
         class="flex items-center justify-center w-10 h-10 p-1.5 rounded-default dark:text-darkDanger hover:bg-lightDanger/10 dark:hover:bg-darkDanger/10 transition-colors flex-shrink-0"
@@ -41,7 +41,7 @@
     </div>
 
     <button
-      v-if="!readonly"
+      v-if="!readonly && !fixedMode"
       type="button"
       variant="primary"
       @click="addPair"
@@ -54,7 +54,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue';
+import { computed, ref, watch, nextTick } from 'vue';
 import { Input, Textarea, Button } from '@/afcl';
 import { IconTrashBinSolid, IconPlusOutline } from '@iconify-prerendered/vue-flowbite';
 
@@ -109,22 +109,32 @@ function fromDisplay(raw: string): any {
   }
 }
 
-function toPairs(json: any): Pair[] {
+function toPairs(json: any, fixedKeys?: string[]): Pair[] {
   let obj: any;
   if (typeof json === 'string') {
-    try { obj = JSON.parse(json); } catch { return []; }
+    try { obj = JSON.parse(json); } catch { obj = undefined; }
   } else {
     obj = json;
   }
-  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return [];
+
+  const isObject = obj && typeof obj === 'object' && !Array.isArray(obj);
+  if (fixedKeys) {
+    return fixedKeys.map(key => ({
+      key,
+      value: isObject && Object.prototype.hasOwnProperty.call(obj, key) ? toDisplay(obj[key]) : '',
+    }));
+  }
+
+  if (!isObject) return [];
   return Object.entries(obj).map(([key, val]) => ({ key, value: toDisplay(val) }));
 }
 
 function toObject(): Record<string, any> {
   const result: Record<string, any> = {};
   for (const pair of pairs.value) {
-    if (pair.key.trim()) {
-      result[pair.key.trim()] = fromDisplay(pair.value);
+    const key = fixedMode.value ? pair.key : pair.key.trim();
+    if (fixedMode.value || key) {
+      result[key] = fromDisplay(pair.value);
     }
   }
   return result;
@@ -151,7 +161,9 @@ function getError(): string | null {
   return null;
 }
 
-const pairs = ref<Pair[]>(toPairs(props.value));
+const fixedMode = computed(() => Array.isArray(props.meta?.fixedKeys));
+const fixedKeys = computed<string[] | undefined>(() => fixedMode.value ? props.meta.fixedKeys : undefined);
+const pairs = ref<Pair[]>(toPairs(props.value, fixedKeys.value));
 
 let skipWatch = false;
 
@@ -179,8 +191,7 @@ watch(
   () => props.value,
   (newVal) => {
     if (skipWatch) { skipWatch = false; return; }
-    pairs.value = toPairs(newVal);
+    pairs.value = toPairs(newVal, fixedKeys.value);
   },
 );
 </script>
-
