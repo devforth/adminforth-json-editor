@@ -1,9 +1,9 @@
 <template>
-  <div class="flex flex-col gap-2">
+  <div class="flex w-full min-w-0 flex-col gap-2">
     <div v-if="pairs.length" class="flex items-center gap-2">
-      <span class="flex-1 text-xs font-medium text-lightInputText dark:text-darkInputText">Key</span>
-      <span class="flex-1 text-xs font-medium text-lightInputText dark:text-darkInputText">Value</span>
-      <span v-if="!readonly && !fixedMode" class="w-7" />
+      <span class="w-[200px] flex-shrink-0 text-xs font-medium text-lightInputText dark:text-darkInputText">Key</span>
+      <span class="min-w-0 flex-1 text-xs font-medium text-lightInputText dark:text-darkInputText">Value</span>
+      <span v-if="!readonly && !fixedMode" class="w-10 flex-shrink-0" />
     </div>
 
     <div
@@ -16,6 +16,7 @@
         v-model="pair.key"
         placeholder="key"
         fullWidth
+        class="w-[200px] flex-shrink-0"
         :readonly="readonly || fixedMode"
         @update:modelValue="onChanged"
       />
@@ -24,7 +25,7 @@
         v-autogrow
         placeholder="value"
         rows="1"
-        class="flex-1 min-w-64"
+        class="min-w-0 flex-1"
         :readonly="readonly"
         @update:modelValue="onChanged"
       />
