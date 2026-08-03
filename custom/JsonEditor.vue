@@ -3,7 +3,7 @@
     <div v-if="pairs.length" class="flex items-center gap-2">
       <span class="w-[200px] flex-shrink-0 text-xs font-medium text-lightInputText dark:text-darkInputText">Key</span>
       <span class="min-w-0 flex-1 text-xs font-medium text-lightInputText dark:text-darkInputText">Value</span>
-      <span v-if="!readonly && !fixedMode" class="w-10 flex-shrink-0" />
+      <span class="w-10 flex-shrink-0" />
     </div>
 
     <div
@@ -39,6 +39,7 @@
       >
         <IconTrashBinSolid class="w-6 h-6 text-lightInputIcons dark:text-darkInputIcons" />
       </button>
+      <span v-else class="w-10 flex-shrink-0" />
     </div>
 
     <button
