@@ -1,6 +1,6 @@
 import { AdminForthPlugin, AdminForthDataTypes } from "adminforth";
 import type { IAdminForth, AdminForthResource } from "adminforth";
-import type { PluginOptions } from './types.js';
+import type { PluginOptions, FixedKey } from './types.js';
 
 export default class JsonEditorPlugin extends AdminForthPlugin {
   options: PluginOptions;
@@ -28,10 +28,14 @@ export default class JsonEditorPlugin extends AdminForthPlugin {
     }
 
     if (this.options.fixedKeys !== undefined) {
-      if (!Array.isArray(this.options.fixedKeys) || this.options.fixedKeys.some(key => typeof key !== 'string')) {
-        throw new Error('[JsonEditorPlugin] "fixedKeys" must be an array of strings');
+      if (
+        !Array.isArray(this.options.fixedKeys)
+        || this.options.fixedKeys.some(key => typeof key !== 'string' && typeof key?.name !== 'string')
+      ) {
+        throw new Error('[JsonEditorPlugin] "fixedKeys" must be an array of key names or { name, optional } objects');
       }
-      if (new Set(this.options.fixedKeys).size !== this.options.fixedKeys.length) {
+      const names = this.normalizeFixedKeys(this.options.fixedKeys).map(key => key.name);
+      if (new Set(names).size !== names.length) {
         throw new Error('[JsonEditorPlugin] "fixedKeys" must not contain duplicate keys');
       }
     }
@@ -49,12 +53,14 @@ export default class JsonEditorPlugin extends AdminForthPlugin {
       column.components = {};
     }
 
+    const fixedKeys = this.options.fixedKeys && this.normalizeFixedKeys(this.options.fixedKeys);
+
     const editorComponent = {
       file: this.componentPath('JsonEditor.vue'),
       meta: {
         pluginInstanceId: this.pluginInstanceId,
         columnName: this.options.fieldName,
-        fixedKeys: this.options.fixedKeys,
+        fixedKeys,
       },
     };
 
@@ -63,7 +69,7 @@ export default class JsonEditorPlugin extends AdminForthPlugin {
       meta: {
         pluginInstanceId: this.pluginInstanceId,
         columnName: this.options.fieldName,
-        fixedKeys: this.options.fixedKeys,
+        fixedKeys,
       },
     };
 
@@ -72,10 +78,11 @@ export default class JsonEditorPlugin extends AdminForthPlugin {
     column.components.show = viewerComponent;
     column.components.list = viewerComponent;
 
-    if (this.options.fixedKeys !== undefined) {
-      const fixedKeys = [...this.options.fixedKeys];
+    if (fixedKeys) {
+      const allowedKeys = new Set(fixedKeys.map(key => key.name));
+      const requiredKeys = fixedKeys.filter(key => !key.optional).map(key => key.name);
       const validateFixedKeys = (value: unknown) => {
-        let parsedValue = value;
+        let parsedValue = value ?? {};
         if (typeof parsedValue === 'string') {
           try {
             parsedValue = JSON.parse(parsedValue);
@@ -89,8 +96,7 @@ export default class JsonEditorPlugin extends AdminForthPlugin {
         }
 
         const savedKeys = Object.keys(parsedValue);
-        const fixedKeySet = new Set(fixedKeys);
-        if (savedKeys.length !== fixedKeys.length || savedKeys.some(key => !fixedKeySet.has(key))) {
+        if (savedKeys.some(key => !allowedKeys.has(key)) || requiredKeys.some(key => !savedKeys.includes(key))) {
           return this.fixedKeysValidationError(fixedKeys);
         }
 
@@ -107,18 +113,24 @@ export default class JsonEditorPlugin extends AdminForthPlugin {
 
       resourceConfig.hooks.edit ??= {};
       resourceConfig.hooks.edit.beforeSave ??= [];
-      resourceConfig.hooks.edit.beforeSave.push(async ({ updates, oldRecord }) => {
-        const value = Object.prototype.hasOwnProperty.call(updates, this.options.fieldName)
-          ? updates[this.options.fieldName]
-          : oldRecord[this.options.fieldName];
-        const error = validateFixedKeys(value);
+      resourceConfig.hooks.edit.beforeSave.push(async ({ updates }) => {
+        if (!Object.prototype.hasOwnProperty.call(updates, this.options.fieldName)) {
+          return { ok: true };
+        }
+        const error = validateFixedKeys(updates[this.options.fieldName]);
         return error ? { ok: false, error } : { ok: true };
       });
     }
   }
 
-  private fixedKeysValidationError(fixedKeys: string[]): string {
-    const expectedKeys = fixedKeys.length ? fixedKeys.map(key => `"${key}"`).join(', ') : '(none)';
-    return `[JsonEditorPlugin] Field "${this.options.fieldName}" must be a JSON object with exactly these keys: ${expectedKeys}`;
+  private normalizeFixedKeys(fixedKeys: (string | FixedKey)[]): FixedKey[] {
+    return fixedKeys.map(key => typeof key === 'string' ? { name: key } : key);
+  }
+
+  private fixedKeysValidationError(fixedKeys: FixedKey[]): string {
+    const expectedKeys = fixedKeys.length
+      ? fixedKeys.map(key => `"${key.name}"${key.optional ? ' (optional)' : ''}`).join(', ')
+      : '(none)';
+    return `[JsonEditorPlugin] Field "${this.options.fieldName}" must be a JSON object with only these keys: ${expectedKeys}`;
   }
 }

@@ -31,7 +31,23 @@ export default {
 
 > The plugin works on columns with type `json`, `string`, or `text`. The stored value must be a JSON object (`{}`). Top-level arrays and primitives are not supported.
 
-When `fixedKeys` is provided, key inputs are read-only and rows cannot be added or removed. The editor always displays every configured key in the specified order, including keys missing from an existing value. Create and edit requests are also validated on the backend, so the stored object must contain exactly the configured key set.
+## Fixed keys
+
+When `fixedKeys` is provided, key inputs are read-only and rows cannot be added or removed. The editor always displays every configured key in the specified order, including keys missing from an existing value. Create and edit requests are also validated on the backend: the stored object may contain only the configured keys, and every required key must be present. On edit, the field is validated only when it is changed.
+
+A key given as a string is required. To let a key be left out of the stored object, pass it as an object with `optional: true`:
+
+```ts
+new JsonEditorPlugin({
+  fieldName: 'credentials',
+  fixedKeys: [
+    'login',                              // required
+    { name: 'password', optional: true }, // may be omitted
+  ],
+}),
+```
+
+An empty value of an optional key omits that key from the stored object. When every key is optional, clearing all values saves an empty object `{}`, and the field can be left untouched on create.
 
 ## Value types
 

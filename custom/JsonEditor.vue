@@ -89,9 +89,15 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:value', 'update:inValidity', 'update:emptiness']);
 
+interface FixedKey {
+  name: string;
+  optional?: boolean;
+}
+
 interface Pair {
   key: string;
   value: string;
+  optional?: boolean;
 }
 
 function toDisplay(v: any): string {
@@ -111,7 +117,7 @@ function fromDisplay(raw: string): any {
   }
 }
 
-function toPairs(json: any, fixedKeys?: string[]): Pair[] {
+function toPairs(json: any, fixedKeys?: FixedKey[]): Pair[] {
   let obj: any;
   if (typeof json === 'string') {
     try { obj = JSON.parse(json); } catch { obj = undefined; }
@@ -121,9 +127,10 @@ function toPairs(json: any, fixedKeys?: string[]): Pair[] {
 
   const isObject = obj && typeof obj === 'object' && !Array.isArray(obj);
   if (fixedKeys) {
-    return fixedKeys.map(key => ({
-      key,
-      value: isObject && Object.prototype.hasOwnProperty.call(obj, key) ? toDisplay(obj[key]) : '',
+    return fixedKeys.map(({ name, optional }) => ({
+      key: name,
+      value: isObject && Object.prototype.hasOwnProperty.call(obj, name) ? toDisplay(obj[name]) : '',
+      optional,
     }));
   }
 
@@ -134,6 +141,8 @@ function toPairs(json: any, fixedKeys?: string[]): Pair[] {
 function toObject(): Record<string, any> {
   const result: Record<string, any> = {};
   for (const pair of pairs.value) {
+    // an optional key with an empty value is left out of the object
+    if (pair.optional && !pair.value.trim()) continue;
     const key = fixedMode.value ? pair.key : pair.key.trim();
     if (fixedMode.value || key) {
       result[key] = fromDisplay(pair.value);
@@ -152,7 +161,7 @@ function getError(): string | null {
     if (!hasKey) {
       return 'Value without a key is not allowed';
     }
-    if (!hasValue) {
+    if (!hasValue && !pair.optional) {
       return 'Key without a value is not allowed';
     }
   }
@@ -164,7 +173,7 @@ function getError(): string | null {
 }
 
 const fixedMode = computed(() => Array.isArray(props.meta?.fixedKeys));
-const fixedKeys = computed<string[] | undefined>(() => fixedMode.value ? props.meta.fixedKeys : undefined);
+const fixedKeys = computed<FixedKey[] | undefined>(() => fixedMode.value ? props.meta.fixedKeys : undefined);
 const pairs = ref<Pair[]>(toPairs(props.value, fixedKeys.value));
 
 let skipWatch = false;
@@ -173,9 +182,10 @@ function onChanged() {
   const error = getError();
   emit('update:inValidity', error ?? false);
   if (!error) {
+    const value = toObject();
     skipWatch = true;
-    emit('update:value', JSON.stringify(toObject()));
-    emit('update:emptiness', pairs.value.length === 0);
+    emit('update:value', JSON.stringify(value));
+    emit('update:emptiness', Object.keys(value).length === 0);
   }
 }
 
